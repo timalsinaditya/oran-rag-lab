@@ -1,0 +1,6 @@
+[
+ {"id": 16, "field": "base_verdict", "value": "partial",
+  "reason": "Manual review: base answer gives a generic description and never states low-latency delivery between internal endpoints; judge wrongly claimed it did."},
+ {"id": 25, "field": "rag_verdict", "value": "correct",
+  "reason": "Manual review: RAG answer states the key facts (benchmark for code generation and codebase understanding in srsRAN); omitting 'introduced with ORANSight-2.0' is not a factual error."}
+]

@@ -1,0 +1,12 @@
+torch==2.14.1
+transformers==5.20.2
+accelerate==1.15.0
+bitsandbytes==0.50.2
+sentence-transformers==6.3.0
+faiss-cpu==1.16.0
+gradio==6.32.0
+pypdf==7.1.0
+python-docx==1.2.0
+tiktoken==0.14.0
+bm25s==0.2.6
+numpy==2.2.6

@@ -1,0 +1,17 @@
+# environment / caches
+.venv/
+__pycache__/
+*.pyc
+logs/
+# O-RAN specifications are licensed by the O-RAN ALLIANCE - do not redistribute
+docs/
+docs_full/
+docs_full_old/
+# indexes contain spec text and are large - rebuild with ingest.py
+index/
+index_full/
+index_v2/
+# retrieved passages (164 MB of spec text) - regenerate with bench/run_bench.py retrieve
+bench/ctx/
+results/app.log
+results_full/

@@ -1,0 +1,94 @@
+Index: 385 chunks
+
+================================================================================ 
+TOP-5 RETRIEVED PASSAGES
+================================================================================
+[1] score=0.698  O-RAN.WG2.TS.A1GAP-R005-v05.04.pdf  p.10-11
+    using a standardized mechanism (language, syntax, etc.); • the A1 interface enables transmission of A1 enrichment information from Non-RT RIC to Near-RT RIC as needed by Near-RT RIC; • the A1 interface enables Near-RT to discover available enrichment information for which secure delivery can [...]
+[2] score=0.691  O-RAN.WG2.TS.A1GAP-R005-v05.04.pdf  p.9-10
+    is used for discovery, request, and delivery of A1 enrichment information. The A1 interface is also used for the discovery of external enrichment information and the SMO / Non-RT RIC is responsible for the authentication of the source and the security of the direct connection. NOTE: The [...]
+[3] score=0.646  O-RAN.WG3.TS.RICARCH-R005-v09.00.docx  §9.2.2.1A	A1 Policy Setup triggered by Near-RT RIC platform … §9.2.2.2	A1 Policy Update triggered by A1 interface operation
+    param defaultFontSize 12 Box “Near-RT RIC” Participant plt as “Near-RT RIC platform” Participant xApp1 as "xApp 1" Participant xApp2 as "xApp 2" End box Autonumber plt -> xApp2: A1 POLICY SETUP REQUEST xApp2 -> plt: A1 POLICY SETUP RESULT plt <-> xApp1: A1 Policy Delete procedure @enduml [...]
+[4] score=0.643  O-RAN.WG2.TS.A1GAP-R005-v05.04.pdf  p.19-21
+    policy statements. The detailed description is provided in A1TP [8]. HTTP JSON TCP IP Data link layer Physical layer Data Interchange Application Transport Network Data link Physical HTTP JSON TCP IP Data link layer Physical layer Non-RT RIC Near-RT RIC TLS TLSSecurity Figure 7-1: Illustration [...]
+[5] score=0.643  O-RAN.WG3.TS.RICARCH-R005-v09.00.docx  §8.1	E2 Interface … §9.2.2.1	A1 Policy Setup procedure triggered by A1 interface operation
+    O-RAN.WG3.TS.E2AP [3] specifies E2 interface application protocols. 8.2 A1 Interface O-RAN.WG2.TS.A1.GAP [8] specifies A1 interface general aspects and principles. O-RAN.WG2.TS.A1AP [9] specifies A1 interface application protocols. 8.3 O1 Interface An implementation of O1 interface at Near-RT [...]
+================================================================================ 
+RAG ANSWER
+================================================================================
+The A1 interface facilitates several key functions [1][4]:
+
+- It enables the inter-connection of Non-RT RIC functionality in the SMO with Near-RT RIC functionality in the Radio Access Network supplied by different manufacturers [1].
+
+- It provides policies for individual UEs or groups of UEs, or for individual cells or groups of cells [1].
+
+- It offers status and feedback from Near-RT RIC that enables Non-RT RIC to monitor the enforcement of policies [1].
+
+- It supplies enrichment information as requested by Near-RT RIC [1].
+
+- It supports the exchange of AI/ML model training related messages between SMO/Non-RT RIC and Near-RT RIC [1][2].
+
+- It transfers policy management information from Non-RT RIC to Near-RT RIC [2].
+
+- It provides policy status and feedback information from Near-RT RIC to Non-RT RIC [2].
+
+- It supports the discovery and request of A1 enrichment information from Near-RT RIC to Non-RT RIC and the delivery of A1 enrichment information from Non-RT RIC to Near-RT RIC [2].
+
+- It authorizes requests to access A1 services [2].
+
+- It enables policy-based guidance of radio resource management internal functions or applications that are part of Near-RT RIC [2].
+
+- It enables mechanisms for Near-RT RIC to provide status and feedback information regarding the enforcement of A1 policies to Non-RT RIC [2].
+
+- It supports the creation, modification, and deletion of A1 policies by the Non-RT RIC [2].
+
+- It enforces A1 policies until they are deleted, with the responsibility lying with the Non-RT RIC to manage these policies based on context information [1].
+
+The A1 interface is designed to support a multi-vendor environment and is independent of specific implementations of the SMO, Non-RT RIC, and Near-RT RIC [2].
+
+================================================================================ 
+NO-RAG BASELINE ANSWER
+================================================================================
+The A1 interface in O-RAN is used for communication between the Radio Unit (RU) and the Distributed Unit (DU). It facilitates the exchange of radio signals, control information, and synchronization data.
+
+Index: 385 chunks
+
+================================================================================ 
+TOP-5 RETRIEVED PASSAGES
+================================================================================
+[1] score=0.627  O-RAN.WG3.TS.RICARCH-R005-v09.00.docx  §6A.1	General … §6A.2.1	Overview
+    -1: Service-based representation for internal Near-RT RIC The services can be classified into the following categories, in regard to the relevant functionalities: - A1 related services; - E2 related services; - Management related services; - SDL services; - Enablement services; - AI/ML [...]
+[2] score=0.621  O-RAN.WG3.TS.RICARCH-R005-v09.00.docx  §6A.2.3.1	E2 Subscription service … §6A.2.5.1	SDL Information service
+    App | 9.3.2.5 E2 Subscription service | E2 Subscription Modification | Request/Response | xApp | 9.3.2.7 6A.2.3.2 E2 Indication service The E2 Indication service supports the following operations in Table 6A.2.3.2-1. Table 6A.2.3.2-1: List of E2 Indication service operations Service Name | [...]
+[3] score=0.612  O-RAN.WG3.TS.E2AP-R005-v09.00.docx  §4.3	Specification notations … §8.1	Elementary procedures
+    case characters and all letters in Italic font followed by the abbreviation "IE", e.g. E-RAB ID IE. Value of an IE When referring to the value of an Information Element (IE) in the present document the "Value" is written as it is specified in the present document enclosed by quotation marks, [...]
+[4] score=0.603  O-RAN.WG3.TS.RICARCH-R005-v09.00.docx  §9.3.2.1	E2 Subscription procedure
+    subsequent operation. | [ALT] Steps 6-9 are executed if the subscription proposed by xApp necessitates E2AP procedure(s) (i.e., no record found for E2 Node ID with Subscription matching the same contents): Step 6 (M) | Near-RT RIC platform selects appropriate E2 interface and initiates [...]
+[5] score=0.602  O-RAN.WG3.TS.E2AP-R005-v09.00.docx  §9.3.3	Elementary Procedure definitions
+    -PROCEDURE.&UnsuccessfulOutcome ({E2AP-ELEMENTARY-PROCEDURES}{@procedureCode}) } -- ************************************************************** -- -- Interface Elementary Procedure List -- -- ************************************************************** E2AP-ELEMENTARY-PROCEDURES E2AP- [...]
+================================================================================ 
+RAG ANSWER
+================================================================================
+The E2AP services listed include:
+
+- E2 Subscription service [1][2]
+- E2 Indication service [1][2]
+- E2 Control service [1][2]
+- E2 Guidance service [1][2]
+- E2 Query service [1][2]
+
+These services are categorized under E2 related services in the Near-RT RIC platform [1].
+
+================================================================================ 
+NO-RAG BASELINE ANSWER
+================================================================================
+The E2AP (E2 Application Protocol) defines several services for communication between gNodeBs and the E2 node. The main services include:
+
+1. E2 Setup
+2. E2 Modification
+3. E2 Release
+4. E2 Status Reporting
+5. E2 Notification
+
+These services facilitate the establishment, modification, and termination of connections, as well as the reporting of status and notifications between the gNodeB and the E2 node.
+

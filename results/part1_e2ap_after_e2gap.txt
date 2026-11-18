@@ -1,0 +1,40 @@
+Index: 418 chunks
+
+================================================================================ 
+TOP-5 RETRIEVED PASSAGES
+================================================================================
+[1] score=0.864  O-RAN.WG3.TS.RICARCH-R005-v09.00.docx  §6A.2.3.1	E2 Subscription service … §6A.2.5.1	SDL Information service
+    App | 9.3.2.5 E2 Subscription service | E2 Subscription Modification | Request/Response | xApp | 9.3.2.7 6A.2.3.2 E2 Indication service The E2 Indication service supports the following operations in Table 6A.2.3.2-1. Table 6A.2.3.2-1: List of E2 Indication service operations Service Name | [...]
+[2] score=0.827  O-RAN.WG3.TS.E2AP-R005-v09.00.docx  §4.3	Specification notations … §8.1	Elementary procedures
+    case characters and all letters in Italic font followed by the abbreviation "IE", e.g. E-RAB ID IE. Value of an IE When referring to the value of an Information Element (IE) in the present document the "Value" is written as it is specified in the present document enclosed by quotation marks, [...]
+[3] score=0.728  O-RAN.WG3.TS.E2AP-R005-v09.00.docx  §9.3.3	Elementary Procedure definitions
+    -PROCEDURE ::= { INITIATING MESSAGE E2ResourceStatusRequest SUCCESSFUL OUTCOME E2ResourceStatusResponse UNSUCCESSFUL OUTCOME E2ResourceStatusFailure PROCEDURE CODE id-E2resourceStatusReportingInitiation CRITICALITY reject } e2resourceStatusUpdate E2AP-ELEMENTARY-PROCEDURE ::= { INITIATING [...]
+[4] score=0.720  O-RAN.WG3.TS.E2AP-R005-v09.00.docx  §9.3.7	Constant definitions
+    (2) e2ap(1) e2ap-Constants (4) } DEFINITIONS AUTOMATIC TAGS ::= BEGIN IMPORTS ProcedureCode, ProtocolIE-ID FROM E2AP-CommonDataTypes; -- ************************************************************** -- -- Elementary Procedures -- -- [...]
+[5] score=0.677  O-RAN.WG3.TS.E2AP-R005-v09.00.docx  §9.3.4	PDU definitions
+    {RICsubscriptionLoadConfirm-ItemIEs} } RICsubscriptionLoadConfirm-ItemIEs E2AP-PROTOCOL-IES ::= { { ID id-RICsubscriptionLoadConfirm-Item CRITICALITY reject TYPE RICsubscriptionLoadConfirm-ItemIE PRESENCE mandatory }, ... } RICsubscriptionLoadConfirm-ItemIE ::= SEQUENCE { ricRequestID [...]
+================================================================================ 
+RAG ANSWER
+================================================================================
+The E2AP services listed include:
+
+- E2 Indication service [1]
+- E2 Control service [1]
+- E2 Guidance service [1]
+- E2 Query service [1]
+- xApp Registration service [1]
+- SDL Information service [1]
+
+================================================================================ 
+NO-RAG BASELINE ANSWER
+================================================================================
+The E2AP (E2 Application Protocol) defines several services for communication between gNodeBs and the E2 node. The main services include:
+
+1. E2 Setup
+2. E2 Modification
+3. E2 Release
+4. E2 Status Reporting
+5. E2 Notification
+
+These services facilitate the establishment, modification, and termination of connections, as well as the reporting of status and notifications between the gNodeB and the E2 node.
+

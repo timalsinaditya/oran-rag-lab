@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O-RAN RAG Assistant</title>
+<meta name="description" content="A retrieval-augmented assistant for the O-RAN specifications: architecture, design choices and results on ORAN-Bench-13K.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%233b4fd8'/><path d='M8 22V10h6a4 4 0 0 1 0 8h-6m6 0 5 4' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f8fb; --surface:#ffffff; --surface-2:#f0f2f7; --ink:#141a26; --ink-2:#4a5468; --ink-3:#7a8497;
+  --line:#e2e6ee; --accent:#3b4fd8; --accent-soft:#e8ebff; --good:#0f8a5f; --good-soft:#e2f5ec;
+  --bad:#c2410c; --bad-soft:#fdecdf; --muted-bar:#c7cedb; --base-bar:#9aa9c4;
+  --off:#e6efff; --on:#e5f6ec; --model:#fff0dc; --store:#eceef2;
+  --shadow:0 1px 2px rgba(20,26,38,.04),0 4px 16px rgba(20,26,38,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e121a; --surface:#161b25; --surface-2:#1d2330; --ink:#e8ecf3; --ink-2:#b0b9ca; --ink-3:#7f8aa0;
+    --line:#2a3242; --accent:#8b9bff; --accent-soft:#232a4d; --good:#3ccf91; --good-soft:#123326;
+    --bad:#ff9a5c; --bad-soft:#3a2216; --muted-bar:#3a4356; --base-bar:#5d6b88;
+    --off:#1d2a44; --on:#173326; --model:#3a2c17; --store:#262c38;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e121a; --surface:#161b25; --surface-2:#1d2330; --ink:#e8ecf3; --ink-2:#b0b9ca; --ink-3:#7f8aa0;
+  --line:#2a3242; --accent:#8b9bff; --accent-soft:#232a4d; --good:#3ccf91; --good-soft:#123326;
+  --bad:#ff9a5c; --bad-soft:#3a2216; --muted-bar:#3a4356; --base-bar:#5d6b88;
+  --off:#1d2a44; --on:#173326; --model:#3a2c17; --store:#262c38;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 Inter,system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.86em}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+@media(max-width:600px){.wrap{padding:0 16px}}
+
+/* nav */
+nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;gap:20px;height:56px}
+nav .brand{font-weight:700;color:var(--ink);white-space:nowrap}
+nav .links{display:flex;gap:18px;overflow-x:auto;scrollbar-width:none;flex:1}
+nav .links::-webkit-scrollbar{display:none}
+nav .links a{color:var(--ink-2);font-size:14px;font-weight:500;white-space:nowrap}
+nav .links a:hover{color:var(--ink);text-decoration:none}
+#theme{background:none;border:1px solid var(--line);color:var(--ink-2);border-radius:8px;width:34px;height:34px;cursor:pointer;flex:none}
+
+/* hero */
+header.hero{padding:72px 0 40px}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:clamp(32px,5vw,50px);line-height:1.08;letter-spacing:-.025em;margin:12px 0 18px;font-weight:800;max-width:860px}
+.lede{font-size:clamp(17px,2vw,19px);color:var(--ink-2);max-width:760px;margin:0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:40px}
+@media(max-width:820px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
+.stat .v{font-size:32px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .v.acc{color:var(--accent)}
+.stat .l{font-size:13.5px;color:var(--ink-2);line-height:1.4;margin-top:2px}
+
+section{padding:56px 0;border-top:1px solid var(--line)}
+h2{font-size:clamp(24px,3vw,30px);letter-spacing:-.02em;margin:0 0 8px;font-weight:750}
+.sub{color:var(--ink-2);max-width:760px;margin:0 0 28px}
+h3{font-size:18px;margin:0 0 6px;font-weight:650}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:var(--shadow)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.note{font-size:13.5px;color:var(--ink-3);margin-top:12px}
+
+/* architecture */
+.lane{margin-bottom:22px}
+.lane-label{font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px}
+.flow{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:6px}
+.stage{flex:1 1 0;min-width:128px;border:1px solid var(--line);border-radius:12px;padding:12px 12px;cursor:pointer;text-align:left;font:inherit;color:var(--ink);transition:transform .12s,box-shadow .12s,border-color .12s}
+.stage:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.stage[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.stage b{display:block;font-size:14px;line-height:1.25}
+.stage span{display:block;font-size:12px;color:var(--ink-2);margin-top:4px;line-height:1.35}
+.stage.off{background:var(--off)} .stage.on{background:var(--on)} .stage.model{background:var(--model)} .stage.store{background:var(--store);border-radius:22px}
+.arrow{flex:0 0 26px;display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:18px}
+.detail{margin-top:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px;min-height:120px}
+.detail h3{display:flex;gap:10px;align-items:center}
+.detail p{margin:6px 0 0;color:var(--ink-2)}
+.detail .why{margin-top:10px;padding:10px 14px;background:var(--surface-2);border-radius:10px;font-size:14.5px;color:var(--ink-2)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin-top:14px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1px solid var(--line)}
+details.fig{margin-top:18px}
+details.fig summary{cursor:pointer;color:var(--accent);font-weight:500;font-size:14.5px}
+details.fig img{width:100%;margin-top:12px;border-radius:12px;border:1px solid var(--line);background:#fff}
+
+/* bar charts */
+.seg{display:inline-flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px;margin-bottom:18px}
+.seg button{border:0;background:none;color:var(--ink-2);font:500 13.5px Inter,sans-serif;padding:6px 12px;border-radius:8px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.hbar{display:grid;grid-template-columns:minmax(150px,240px) 1fr;gap:6px 14px;align-items:center}
+@media(max-width:600px){.hbar{grid-template-columns:1fr}}
+.hbar .name{font-size:14px;line-height:1.3}
+.hbar .name small{display:block;color:var(--ink-3);font-size:12px}
+.hbar .track{position:relative;height:26px;background:var(--surface-2);border-radius:6px}
+.hbar .fill{position:absolute;inset:0 auto 0 0;border-radius:6px;background:var(--muted-bar);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.hbar .fill.ours{background:var(--accent)} .hbar .fill.base{background:var(--base-bar)}
+.hbar .val{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.hbar .row-ours .name{font-weight:650}
+.vchart{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:end;height:220px;margin-top:6px;padding:0 4px;position:relative}
+.vchart .zero{position:absolute;left:0;right:0;border-top:1px solid var(--ink-3)}
+.vgroup{display:flex;gap:6px;align-items:end;height:100%;justify-content:center;position:relative}
+.vbar{width:34%;max-width:46px;border-radius:5px 5px 0 0;position:relative}
+.vbar.neg{border-radius:0 0 5px 5px}
+.vbar em{position:absolute;left:50%;transform:translateX(-50%);font-style:normal;font-size:11.5px;font-weight:600;white-space:nowrap}
+.vlabels{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;text-align:center;font-size:12.5px;color:var(--ink-2);margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.hl td{background:var(--accent-soft);font-weight:600}
+.tablewrap{overflow-x:auto}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.neu{background:var(--surface-2);color:var(--ink-2)}
+.errbar{display:flex;height:34px;border-radius:8px;overflow:hidden;margin:8px 0 14px}
+.errbar div{display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:#fff;min-width:0}
+
+/* demos */
+.qtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.qtabs button{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font:500 13.5px Inter,sans-serif;padding:7px 12px;border-radius:999px;cursor:pointer;text-align:left}
+.qtabs button[aria-pressed="true"]{border-color:var(--accent);color:var(--ink);background:var(--accent-soft)}
+.chat .q{font-weight:650;font-size:17px;margin-bottom:16px}
+.ans{border-radius:12px;padding:16px 18px;margin-bottom:12px;border:1px solid var(--line)}
+.ans .who{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;display:flex;justify-content:space-between;gap:10px}
+.ans.rag{background:var(--surface)} .ans.rag .who{color:var(--good)}
+.ans.base{background:var(--surface-2)} .ans.base .who{color:var(--bad)}
+.ans p,.ans ol,.ans ul{margin:6px 0} .ans li{margin:3px 0}
+.cite{display:inline-block;font-size:11.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:5px;padding:0 5px;margin:0 1px;line-height:1.5}
+.srcs{font-size:13px;color:var(--ink-2);margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
+.srcs div{margin:3px 0}
+
+/* explorer */
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.filters select,.filters input{font:14px Inter,sans-serif;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.filters input{flex:1;min-width:180px}
+.count{font-size:13.5px;color:var(--ink-3);margin-bottom:10px}
+.qlist{display:flex;flex-direction:column;gap:8px}
+.qitem{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.qitem>button{all:unset;display:flex;gap:12px;align-items:flex-start;padding:12px 14px;cursor:pointer;width:100%;box-sizing:border-box}
+.qitem>button:focus-visible{outline:2px solid var(--accent);border-radius:12px}
+.qitem .lv{flex:none;font-size:11px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:5px;background:var(--surface-2);color:var(--ink-2);margin-top:2px}
+.qitem .qt{flex:1;font-size:14.5px;line-height:1.45}
+.qitem .tags{flex:none;display:flex;gap:4px}
+.qbody{padding:0 14px 14px 14px;display:none}
+.qitem.open .qbody{display:block}
+.opt{display:grid;grid-template-columns:24px 1fr 90px 90px;gap:10px;align-items:center;padding:7px 8px;border-radius:8px;font-size:14px}
+.opt.gold{background:var(--good-soft)}
+.opt .num{font-weight:700;color:var(--ink-3)}
+.opt .pb{height:8px;background:var(--surface-2);border-radius:4px;position:relative}
+.opt .pb i{position:absolute;inset:0 auto 0 0;border-radius:4px}
+.opt .pb small{position:absolute;right:0;top:-15px;font-size:11px;color:var(--ink-3)}
+.opthead{display:grid;grid-template-columns:24px 1fr 90px 90px;gap:10px;font-size:11.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;padding:0 8px;margin:4px 0 2px}
+.more{margin-top:14px;text-align:center}
+.btn{font:600 14px Inter,sans-serif;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 16px;border-radius:10px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+
+.choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.choice h3{font-size:16px}
+.choice p{margin:4px 0 0;color:var(--ink-2);font-size:14.5px}
+ul.clean{padding-left:18px;margin:8px 0;color:var(--ink-2)} ul.clean li{margin:5px 0}
+footer{padding:36px 0 56px;border-top:1px solid var(--line);color:var(--ink-3);font-size:14px}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <span class="brand">O-RAN RAG</span>
+  <div class="links">
+    <a href="#architecture">Architecture</a><a href="#results">Results</a><a href="#demos">Demos</a>
+    <a href="#explorer">Explorer</a><a href="#specs">Specifications</a><a href="#design">Design choices</a><a href="#limits">Limitations</a>
+  </div>
+  <a href="https://github.com/timalsinaditya/oran-rag-lab" style="font-size:14px;font-weight:600;white-space:nowrap">GitHub ↗</a>
+  <button id="theme" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">ECE 592 / CSC 591 · AI-native Telecom Networks · Lab 2</div>
+  <h1>A 7B model that answers O-RAN questions from the specifications, with citations</h1>
+  <p class="lede">General-purpose LLMs know little about O-RAN: asked what the A1 interface does, Qwen2.5-7B said it connects the Radio Unit and the Distributed Unit. This assistant retrieves passages from 166 O-RAN ALLIANCE specifications, answers only from them, cites every claim, and declines when the documents do not cover the question.</p>
+  <div class="stats">
+    <div class="stat"><div class="v acc">0.879</div><div class="l">accuracy on the official 1,500-question ORANBench set</div></div>
+    <div class="stat"><div class="v">+15.8</div><div class="l">points over the same model without retrieval (0.721)</div></div>
+    <div class="stat"><div class="v">0.896</div><div class="l">on hard questions, above ORANSight-2.0's 32B system (0.878)</div></div>
+    <div class="stat"><div class="v">90–96%</div><div class="l">on our open-ended Task A questions, vs 18–28% without RAG</div></div>
+  </div>
+</div></header>
+
+<section id="architecture"><div class="wrap">
+  <h2>Architecture</h2>
+  <p class="sub">Two phases. Offline, the specifications are cleaned, chunked and embedded once. Online, each question is embedded, matched against the index, reranked, and answered from the top five passages. Click any stage for details.</p>
+  <div class="lane">
+    <div class="lane-label">Offline · build the knowledge base once</div>
+    <div class="flow" id="flow-off"></div>
+  </div>
+  <div class="lane">
+    <div class="lane-label">Online · answer a question</div>
+    <div class="flow" id="flow-on"></div>
+  </div>
+  <div class="detail" id="detail" aria-live="polite"></div>
+  <div class="legend">
+    <span><i style="background:var(--off)"></i>data processing</span>
+    <span><i style="background:var(--model)"></i>model</span>
+    <span><i style="background:var(--store)"></i>index</span>
+    <span><i style="background:var(--on)"></i>query path</span>
+    <span>Hardware: 1× NVIDIA L4 (24 GB)</span>
+  </div>
+  <details class="fig"><summary>Show the architecture figure from the report</summary>
+    <img src="assets/fig1_architecture.png" alt="System architecture: offline indexing lane and online question-answering lane" loading="lazy"></details>
+</div></section>
+
+<section id="results"><div class="wrap">
+  <h2>Results on ORAN-Bench-13K</h2>
+  <p class="sub">ORANBench is the exact 1,500-question set (500 easy, 500 medium, 500 hard) published by the ORANSight-2.0 authors, so the rows below are evaluated on identical questions. Published numbers are copied from ORANSight-2.0, Tables V and VI.</p>
+  <div class="card">
+    <div class="seg" id="split" role="group" aria-label="Difficulty">
+      <button data-k="avg" aria-pressed="true">Average</button><button data-k="easy">Easy</button>
+      <button data-k="medium">Medium</button><button data-k="hard">Hard</button>
+    </div>
+    <div class="hbar" id="bench"></div>
+    <div class="note">Tele-LLM reports only an average. Our answers are scored from the model's next-token logits over the option digits.</div>
+  </div>
+
+  <div class="grid2" style="margin-top:18px">
+    <div class="card">
+      <h3>Where the gain comes from</h3>
+      <p class="sub" style="margin-bottom:14px;font-size:14.5px">Random sample, 500 per level (seed 42). The corpus matters far more than model size.</p>
+      <div class="hbar" id="ablation"></div>
+    </div>
+    <div class="card">
+      <h3>Task A: open-ended questions</h3>
+      <p class="sub" style="margin-bottom:10px;font-size:14.5px">25 questions per set, judged by Phi-4, manually reviewed.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Set</th><th class="n">Base</th><th class="n">RAG</th><th class="n">Cited</th></tr></thead>
+        <tbody>
+          <tr><td>Original Qs, 8 docs</td><td class="n">26%</td><td class="n"><b>96%</b></td><td class="n">100%</td></tr>
+          <tr><td>Original Qs, 29 docs</td><td class="n">28%</td><td class="n"><b>96%</b></td><td class="n">100%</td></tr>
+          <tr><td>Diverse Qs, 29 docs</td><td class="n">18%</td><td class="n"><b>90%</b></td><td class="n">92%</td></tr>
+        </tbody></table></div>
+      <p class="note">Accuracy counts a partial answer as half. The base model hallucinated where RAG was right on 12/25 original and 15/25 diverse questions.</p>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:18px">
+    <div class="card">
+      <h3>When does retrieval hurt?</h3>
+      <p class="sub" style="margin-bottom:10px;font-size:14.5px">RAG minus no-RAG accuracy, with questions split into quarters by the reranker score of the top passage.</p>
+      <div class="seg" id="qsel" role="group" aria-label="Corpus">
+        <button data-k="full" aria-pressed="true">166 specs (official set)</button><button data-k="small">29 documents (sample)</button>
+      </div>
+      <div class="vchart" id="vchart"></div>
+      <div class="vlabels"><span>lowest 25%</span><span>25–50%</span><span>50–75%</span><span>highest 25%</span></div>
+      <p class="note" id="qnote"></p>
+    </div>
+    <div class="card">
+      <h3>Why the remaining 181 answers are wrong</h3>
+      <p class="sub" style="margin-bottom:6px;font-size:14.5px">Is the option text present in the five passages the model saw? (Strict word-for-word check.)</p>
+      <div class="errbar" role="img" aria-label="104 neither, 44 both, 19 gold only, 14 wrong only">
+        <div style="flex:104;background:#6b7a99">57%</div><div style="flex:44;background:#3b4fd8">24%</div>
+        <div style="flex:19;background:#0f8a5f">10%</div><div style="flex:14;background:#c2410c">8%</div>
+      </div>
+      <table>
+        <tbody>
+          <tr><td><span class="pill" style="background:#6b7a99;color:#fff">104</span></td><td>Neither option in the passages: retrieval missed the clause, or it is paraphrased</td></tr>
+          <tr><td><span class="pill" style="background:#3b4fd8;color:#fff">44</span></td><td>Both present: the model picked the wrong one of two close candidates</td></tr>
+          <tr><td><span class="pill" style="background:#0f8a5f;color:#fff">19</span></td><td>Only the correct option present: a pure reading error</td></tr>
+          <tr><td><span class="pill" style="background:#c2410c;color:#fff">14</span></td><td>Only the chosen wrong option present: a misleading passage</td></tr>
+        </tbody>
+      </table>
+      <p class="note">Most errors are retrieval problems; better retrieval, not a bigger generator, is the next lever. Picks per option (474/496/319/211) track the gold distribution (464/516/328/192), so there is no position bias.</p>
+    </div>
+  </div>
+</div></section>
+
+<section id="demos"><div class="wrap">
+  <h2>Spec Q&amp;A with citations</h2>
+  <p class="sub">Task B1 queries run through the final system (166 specs, top-5 passages), next to the same model answering without retrieval.</p>
+  <div class="qtabs" id="qtabs" role="group" aria-label="Demo question"></div>
+  <div class="card chat" id="demo"></div>
+</div></section>
+
+<section id="explorer"><div class="wrap">
+  <h2>Benchmark explorer</h2>
+  <p class="sub">All 1,500 official ORANBench questions with the 7B model's choice with and without retrieval, its confidence over the four options, and the five passages it was given (source and location).</p>
+  <div class="filters">
+    <select id="f-lv" aria-label="Level"><option value="">All levels</option><option value="e">Easy</option><option value="m">Medium</option><option value="h">Hard</option></select>
+    <select id="f-out" aria-label="Outcome">
+      <option value="">All outcomes</option><option value="fixed">RAG fixed it (base wrong)</option>
+      <option value="broke">RAG broke it (base right)</option><option value="both">Both right</option><option value="neither">Both wrong</option>
+    </select>
+    <input id="f-q" type="search" placeholder="Search questions, e.g. E2 setup, M-Plane, PTP…" aria-label="Search">
+  </div>
+  <div class="count" id="count">Loading questions…</div>
+  <div class="qlist" id="qlist"></div>
+  <div class="more"><button class="btn" id="more" hidden>Show more</button></div>
+</div></section>
+
+<section id="specs"><div class="wrap">
+  <h2>The specifications</h2>
+  <p class="sub">All 180 download IDs used to build the corpus, grouped by working group. Each link opens the official O-RAN ALLIANCE download for that file (the specs are not redistributed here). 166 specifications were indexed; the remaining downloads are YANG model archives and errata that contain no indexable prose.</p>
+  <div class="filters">
+    <select id="s-wg" aria-label="Working group"><option value="">All groups</option></select>
+    <input id="s-q" type="search" placeholder="Filter by name, e.g. E2AP, CUS, Security…" aria-label="Filter specifications">
+  </div>
+  <div class="count" id="s-count"></div>
+  <div class="tablewrap card" style="padding:6px 14px"><table>
+    <thead><tr><th>Group</th><th>Specification</th><th>Version</th><th class="n">Download</th></tr></thead>
+    <tbody id="s-body"></tbody></table></div>
+  <div class="card" style="margin-top:18px">
+    <h3>Download them all</h3>
+    <p class="sub" style="margin-bottom:10px;font-size:14.5px">Clone the repository and run <a href="https://github.com/timalsinaditya/oran-rag-lab/blob/main/download_specs.sh"><code>download_specs.sh</code></a>. It fetches all 180 files into <code>docs_full/</code>, unpacks archives, and can be re-run to resume. Downloading means accepting the O-RAN ALLIANCE terms of use.</p>
+    <pre class="mono" id="s-cmd" style="background:var(--surface-2);padding:14px;border-radius:10px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;margin:0;font-size:12.5px"></pre>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="s-copy">Copy command</button><button class="btn" id="s-csv">Download list (CSV)</button></div>
+  </div>
+</div></section>
+
+<section id="design"><div class="wrap">
+  <h2>Design choices</h2>
+  <p class="sub">What we chose and why.</p>
+  <div class="choices">
+    <div class="card choice"><h3>The whole corpus, latest versions only</h3><p>Going from 29 documents to all 166 specifications raised benchmark accuracy by about 13 points, more than any other change. Only the newest version of each spec is indexed, so the retriever never has to choose between conflicting releases.</p></div>
+    <div class="card choice"><h3>Clean before chunking</h3><p>Tables of contents, licence boilerplate, change history and ASN.1 listings match almost any query and crowd out real content. Removing them, and keeping page (PDF) or section (DOCX) locations, makes citations checkable.</p></div>
+    <div class="card choice"><h3>800-token chunks, 15% overlap</h3><p>Spec clauses are long and cross-reference each other; 800 tokens usually keeps a definition together with its context, and the overlap avoids cutting a sentence in half at the boundary.</p></div>
+    <div class="card choice"><h3>Dense search, then a cross-encoder</h3><p>bge-m3 finds 30 candidates quickly; bge-reranker-v2-m3 reads question and passage together and keeps the best 5. A small boost for passages whose spec name matches the question helps with interface names like A1, E2 and O1.</p></div>
+    <div class="card choice"><h3>Answer only from passages, or decline</h3><p>The prompt tells the model to cite each claim as [n] and to say "The provided documents do not cover this." when the passages do not answer. That is how the assistant refuses the invented Z7 interface.</p></div>
+    <div class="card choice"><h3>Logit scoring for multiple choice</h3><p>For benchmark questions we read the next-token probabilities of the option digits instead of parsing text. This removes formatting errors and gives a confidence for every option.</p></div>
+    <div class="card choice"><h3>No leakage</h3><p>The ORAN-Bench-13K and ORANSight papers are excluded from the corpus, and no benchmark question is indexed.</p></div>
+    <div class="card choice"><h3>Retrieval beats model size</h3><p>Qwen2.5-32B without retrieval scores 0.763 on our sample; the 7B model with the right documents scores 0.872. We kept the 7B model, which fits on one L4 next to the retriever.</p></div>
+  </div>
+</div></section>
+
+<section id="limits"><div class="wrap">
+  <div class="grid2">
+    <div>
+      <h2>Limitations</h2>
+      <ul class="clean">
+        <li>One benchmark, generated by an LLM from the same documents we retrieve from, which favours retrieval. It does not test figures or cross-document reasoning.</li>
+        <li>Logit scoring avoids formatting errors a free-text system would make in practice.</li>
+        <li>Task A sets have 25 questions, so one question moves accuracy by 4 points.</li>
+        <li>Reranking takes about 2.6 s per question; a chat answer takes 15–25 s to stream.</li>
+        <li>Prompts and answer extraction differ from ORANSight-2.0; only the question set is identical.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Next steps</h2>
+      <ul class="clean">
+        <li>Smaller chunks labelled with spec and section; tables as their own units.</li>
+        <li>Keyword search alongside dense search for exact parameter names.</li>
+        <li>32B model with retrieval, and QLoRA fine-tuning of the 7B model, to see what model size and fine-tuning add on top of good retrieval.</li>
+      </ul>
+    </div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  Models: BAAI/bge-m3, BAAI/bge-reranker-v2-m3, Qwen2.5-7B-Instruct, Phi-4 (judge). Benchmark: ORAN-Bench-13K (Gajjar &amp; Shah, arXiv:2407.06245); ORANBench set from ORANSight-2.0 (arXiv:2503.05200), MIT licence. O-RAN specifications © O-RAN ALLIANCE e.V.; no specification text is reproduced on this page. Code: <a href="https://github.com/timalsinaditya/oran-rag-lab">github.com/timalsinaditya/oran-rag-lab</a>.
+</div></footer>
+
+<script>
+(function(){
+  // ---------- theme
+  const root=document.documentElement, tb=document.getElementById('theme');
+  try{const t=localStorage.getItem('theme'); if(t) root.dataset.theme=t;}catch(e){}
+  tb.onclick=()=>{const dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme=dark?'light':'dark'; try{localStorage.setItem('theme',root.dataset.theme)}catch(e){}};
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  // ---------- architecture
+  const OFF=[
+    ['off','O-RAN specs','166 specs · PDF & DOCX','The corpus','All 166 O-RAN ALLIANCE specifications we could download (167 files) across every working group, latest version of each only. The two benchmark papers are deliberately left out.','Coverage was the biggest single factor: hard questions about CUS-Plane, M-Plane and transport specs cannot be answered if those specs are missing.'],
+    ['off','Parse & clean','locations · drop boilerplate','Parse and clean','PDFs are read page by page and DOCX files section by section, so every chunk carries a location like "p.9–10" or "§5.1". Tables of contents, copyright footers, change history, line numbers and ASN.1 code listings are removed.','Boilerplate matches almost every query and pushes real content out of the top 5.'],
+    ['off','Chunk','800 tokens · 15% overlap','Chunking','Text is split into 800-token windows with 120 tokens of overlap, giving 12,042 chunks for the full corpus.','Large enough to keep a definition with its context; the overlap avoids cutting answers at boundaries.'],
+    ['model','Embed','BAAI/bge-m3','Embedding','Each chunk is embedded with BAAI/bge-m3 into a normalised vector.','A strong open multilingual embedder that handles long passages (up to 8k tokens).'],
+    ['store','FAISS index','cosine · 12,042 chunks','Vector index','FAISS IndexFlatIP over normalised vectors, i.e. exact cosine similarity. Small enough that exact search is fast.','Exact search removes approximate-search error from the evaluation.']];
+  const ON=[
+    ['on','Question','"What does A1 do?"','User question','From the web app chat, or a benchmark question. For multiple choice, the query is the question plus its options.','Including the options gives the retriever the exact technical terms to match.'],
+    ['model','Embed query','BAAI/bge-m3','Query embedding','The same embedder maps the question into the index space.',''],
+    ['on','Dense search','top-30 candidates','Dense search','The 30 nearest chunks by cosine similarity.','Cheap recall: the right clause is usually somewhere in the top 30, even when not first.'],
+    ['model','Rerank','bge-reranker-v2-m3','Cross-encoder reranker','Reads question and passage together and rescores all 30; a +0.2 boost is added when the passage comes from a spec named in the question. The best 5 are kept.','Much more precise than vector similarity; its top score is also a useful confidence signal.'],
+    ['model','LLM','Qwen2.5-7B-Instruct','Generator','Answers only from the 5 passages, cites each claim as [n], and says "The provided documents do not cover this." otherwise. For benchmarks, the option is chosen from next-token logits.','A 7B model fits on one 24 GB L4 next to the retriever, and with the right passages it nearly matches a fine-tuned 32B system.'],
+    ['on','Answer','[n] citations · spec + page','Grounded answer','Streamed to the user with the cited passages, their spec names and page or section locations.','Every claim can be checked against the specification.']];
+  const det=document.getElementById('detail');
+  function flow(el,arr,lane){
+    arr.forEach((s,i)=>{
+      if(i) el.insertAdjacentHTML('beforeend','<div class="arrow" aria-hidden="true">→</div>');
+      const b=document.createElement('button'); b.className='stage '+s[0]; b.setAttribute('aria-pressed','false');
+      b.innerHTML=`<b>${s[1]}</b><span>${s[2]}</span>`;
+      b.onclick=()=>{document.querySelectorAll('.stage').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');
+        det.innerHTML=`<h3>${s[3]} <span class="pill neu">${lane}</span></h3><p>${s[4]}</p>${s[5]?`<div class="why"><b>Why:</b> ${s[5]}</div>`:''}`;};
+      el.appendChild(b);
+    });
+  }
+  flow(document.getElementById('flow-off'),OFF,'offline'); flow(document.getElementById('flow-on'),ON,'online');
+  document.querySelector('#flow-on .stage:nth-of-type(4)')||0;
+  document.querySelectorAll('#flow-on .stage')[3].click();
+
+  // ---------- benchmark bars
+  const BENCH=[
+    ['Ours: Qwen2.5-7B + RAG','7B · 166 specs',{easy:.880,medium:.862,hard:.896,avg:.879},'ours'],
+    ['ORANSight-2.0 best','fine-tuned Qwen2.5-32B + RAG',{easy:.904,medium:.884,hard:.878,avg:.889}],
+    ['ORANSight-2.0','fine-tuned Gemma-2 27B + reranker',{easy:.895,medium:.875,hard:.871,avg:.880}],
+    ['NVIDIA O-RAN chatbot','',{easy:.826,medium:.816,hard:.836,avg:.826}],
+    ['Ours: Qwen2.5-7B, no RAG','7B · no retrieval',{easy:.782,medium:.726,hard:.654,avg:.721},'base'],
+    ['TSpec-LLM','',{easy:.748,medium:.668,hard:.526,avg:.647}],
+    ['Tele-LLM','8B',{avg:.573}]];
+  const MIN=.4,MAX=1;
+  function bars(el,rows,k){
+    el.innerHTML=rows.filter(r=>r[2][k]!=null).sort((a,b)=>b[2][k]-a[2][k]).map(r=>{
+      const v=r[2][k],w=((v-MIN)/(MAX-MIN)*100).toFixed(1);
+      return `<div class="name ${r[3]==='ours'?'':''}" style="${r[3]==='ours'?'font-weight:650':''}">${r[0]}${r[1]?`<small>${r[1]}</small>`:''}</div>
+        <div class="track"><div class="fill ${r[3]||''}" style="width:${w}%"></div><span class="val">${v.toFixed(3)}</span></div>`}).join('');
+  }
+  const benchEl=document.getElementById('bench'); bars(benchEl,BENCH,'avg');
+  document.querySelectorAll('#split button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#split button').forEach(x=>x.setAttribute('aria-pressed',x===b));bars(benchEl,BENCH,b.dataset.k);});
+  bars(document.getElementById('ablation'),[
+    ['7B, no retrieval','',{avg:.713},'base'],['7B + RAG, 29 documents','',{avg:.739}],
+    ['32B (4-bit), no retrieval','',{avg:.763}],['7B + RAG, 166 specs','',{avg:.872},'ours']],'avg');
+
+  // ---------- quartile chart
+  const QD={full:[9.6,15.7,19.5,18.7],small:[-1.9,-1.1,1.3,12.0]};
+  const QN={full:'With the full corpus, retrieval helps in every quarter, even when the top passage is a weak match.',
+            small:'With only 29 documents, weakly matching passages mislead the model and RAG does slightly worse than no RAG (the distraction effect).'};
+  function vchart(k){
+    const d=QD[k],lo=-4,hi=22,H=220,z=hi/(hi-lo)*H, el=document.getElementById('vchart');
+    el.innerHTML=`<div class="zero" style="top:${z}px"></div>`+d.map(v=>{
+      const h=Math.abs(v)/(hi-lo)*H, col=v>=0?'var(--accent)':'var(--bad)';
+      const style=v>=0?`height:${h}px;margin-bottom:${H-z}px`:`height:${h}px;margin-bottom:${H-z-h}px`;
+      const lab=v>=0?`<em style="bottom:${h+3}px;color:var(--ink)">+${v.toFixed(1)}</em>`:`<em style="top:${h+3}px;color:var(--bad)">${v.toFixed(1)}</em>`;
+      return `<div class="vgroup"><div class="vbar ${v<0?'neg':''}" style="${style};background:${col};width:46%;max-width:60px">${lab}</div></div>`}).join('');
+    document.getElementById('qnote').textContent=QN[k];
+  }
+  vchart('full');
+  document.querySelectorAll('#qsel button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#qsel button').forEach(x=>x.setAttribute('aria-pressed',x===b));vchart(b.dataset.k);});
+
+  // ---------- demos
+  const C=s=>s.replace(/\[(\d)\]/g,'<span class="cite">$1</span>');
+  const DEMOS=[
+    {t:'xApp subscription',q:'How does an xApp subscribe to E2 Node data, and what happens in the Near-RT RIC platform?',
+     rag:`<ol><li>The xApp asks the Near-RT RIC platform to subscribe to pushes of E2NodeList and/or E2NodeInfo [3][5].</li><li>When an E2AP global procedure (E2 Setup, Reset, E2 Removal, RIC Service Update, E2 Node Configuration Update) runs, the platform updates its database [3][5].</li><li>It finds the xApps interested in the update and pushes E2NodeList or E2NodeInfo, including the E2NodeID, to each [3][5].</li></ol>`,
+     src:['[3] O-RAN.WG3.TS.RICARCH-R005-v09.00, §9.5.8.1–9.5.8.2','[5] O-RAN.WG3.TS.RICARCH-R005-v09.00, §9.5.8.2–9.5.8.3'],
+     base:'Calls the xApp a "Crosshaul Application" and says it sends its subscription directly to the E2 Node, missing the platform-side database and push mechanism.'},
+    {t:'Non-RT vs Near-RT RIC',q:'What is the difference between the Non-RT RIC and the Near-RT RIC in terms of control-loop timing and interfaces?',
+     rag:`<p>The Non-RT RIC handles control loops of more than 1 second, the Near-RT RIC control loops of 10 ms to 1 s [1]. The Non-RT RIC terminates the A1 interface [3]; the Near-RT RIC connects to E2 Nodes over E2 [1].</p>`,
+     src:['[1] O-RAN.WG11.TR.Security-Near-RT-RIC-xApps-R005-v07.00','[3] O-RAN.WG2.TS.Non-RT-RIC-ARCH-R004-v07.00, §5.1'],
+     base:'Expands Non-RT as "Real-Time", gives no concrete timescales, and claims the RICs talk over HTTP/REST versus gRPC or AMQP instead of naming A1 and E2.'},
+    {t:'A1 enrichment information',q:'What is A1 enrichment information and who provides it?',
+     rag:`<p>Information provided to an entity in addition to what is generally available to it, to enhance the performance of its tasks [1]. It can be produced by relaying, combining, refining or analysing other sources [2]. The SMO/Non-RT RIC framework is the A1-EI producer; the Near-RT RIC is the A1-EI consumer [2][3].</p>`,
+     src:['[1] O-RAN.WG2.TS.A1GAP-R005-v05.04, p.4–5','[2] O-RAN.WG2.TS.A1GAP-R005-v05.04, p.8–9','[3] O-RAN.WG2.TS.A1GAP-R005-v05.04, p.14–15'],
+     base:'Invents a "Radio Access Cloud (RAC)" or "Radio Cloud Function (RCF)" as the provider.'},
+    {t:'ML training vs inference host',q:'In the O-RAN AI/ML workflow, what are the ML training host and the ML inference host, and where can they be deployed?',
+     rag:`<p>The training host is the network function that hosts (offline and online) training of the model [5]; the inference host hosts the model in inference mode [5]. Training can be located in the Non-RT RIC [2][3]; inference runs in the Near-RT RIC for loop 2 and in an O-DU for loop 1 [3].</p>`,
+     src:['[2] O-RAN.WG2.AIML-v01.03, p.23–24','[3] O-RAN.WG2.AIML-v01.03, p.35–37','[5] O-RAN.WG2.AIML-v01.03, p.10–11'],
+     base:'Generic cloud/edge description ("in radio units or small cells"); never mentions the Non-RT RIC, Near-RT RIC or control loops.'},
+    {t:'Z7 interface (does not exist)',q:'What does the O-RAN Z7 interface connect, and which working group specifies it?',
+     rag:`<p><b>The provided documents do not cover this.</b></p>`,src:[],
+     base:'"The O-RAN Z7 interface connects the Radio Unit (RU) to the Remote Radio Unit (RRU) … It is specified by the O-RAN Alliance\'s Z-WG (Zonal Working Group)." Both the interface and the working group are invented.'}];
+  const tabs=document.getElementById('qtabs'), demo=document.getElementById('demo');
+  DEMOS.forEach((d,i)=>{const b=document.createElement('button');b.textContent=d.t;b.setAttribute('aria-pressed',i===0);
+    b.onclick=()=>{tabs.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));show(d)};tabs.appendChild(b)});
+  function show(d){demo.innerHTML=`<div class="q">${esc(d.q)}</div>
+    <div class="ans rag"><div class="who"><span>With RAG · 166 specs</span><span class="pill good">${d.src.length?'grounded':'declined'}</span></div>${C(d.rag)}
+      ${d.src.length?`<div class="srcs">${d.src.map(s=>`<div>${C(esc(s))}</div>`).join('')}</div>`:''}</div>
+    <div class="ans base"><div class="who"><span>Same model, no retrieval</span><span class="pill bad">hallucinated</span></div><p>${esc(d.base)}</p></div>`}
+  show(DEMOS[0]);
+
+  // ---------- explorer
+  let DATA=[], view=[], shown=0; const PAGE=20;
+  const list=document.getElementById('qlist'), more=document.getElementById('more'), count=document.getElementById('count');
+  const LV={e:'easy',m:'medium',h:'hard'};
+  fetch('assets/oranbench.json').then(r=>r.json()).then(d=>{DATA=d;apply()}).catch(()=>{count.textContent='Could not load the question data (open this page through a web server, not as a local file).'});
+  function outcome(x){const b=x.bp===x.a,r=x.rp===x.a;return r&&!b?'fixed':b&&!r?'broke':r?'both':'neither'}
+  function apply(){
+    const lv=document.getElementById('f-lv').value, oc=document.getElementById('f-out').value, q=document.getElementById('f-q').value.trim().toLowerCase();
+    view=DATA.filter(x=>(!lv||x.lv===lv)&&(!oc||outcome(x)===oc)&&(!q||(x.q+' '+x.o.join(' ')).toLowerCase().includes(q)));
+    const rc=view.filter(x=>x.rp===x.a).length, bc=view.filter(x=>x.bp===x.a).length;
+    count.textContent=`${view.length} questions · RAG correct ${view.length?(rc/view.length*100).toFixed(1):0}% · no-RAG correct ${view.length?(bc/view.length*100).toFixed(1):0}%`;
+    list.innerHTML='';shown=0;page();
+  }
+  function bar(p,on,color){return p==null?'<span style="font-size:11px;color:var(--ink-3)">n/a</span>':
+    `<div class="pb"><i style="width:${(p*100).toFixed(0)}%;background:${on?color:'var(--muted-bar)'}"></i><small>${(p*100).toFixed(0)}%</small></div>`}
+  function item(x){
+    const oc=outcome(x), tag={fixed:['good','RAG fixed'],broke:['bad','RAG broke'],both:['neu','both right'],neither:['bad','both wrong']}[oc];
+    const el=document.createElement('div');el.className='qitem';
+    el.innerHTML=`<button aria-expanded="false"><span class="lv">${LV[x.lv]}</span><span class="qt">${esc(x.q)}</span><span class="tags"><span class="pill ${tag[0]}">${tag[1]}</span></span></button>
+      <div class="qbody"><div class="opthead"><span></span><span>Option</span><span>No RAG</span><span>RAG</span></div>
+      ${x.o.map((o,i)=>{const n=i+1;return `<div class="opt ${n===x.a?'gold':''}"><span class="num">${n}</span><span>${esc(o)}${n===x.a?' <span class="pill good">correct</span>':''}</span>
+        ${bar(x.bpr?x.bpr[i]:(n===x.bp?null:null),n===x.bp,'var(--base-bar)')}${bar(x.rpr[i],n===x.rp,'var(--accent)')}</div>`}).join('')}
+      ${x.bpr?'':`<div class="note">No-RAG pick: option ${x.bp} (confidence not recorded for this question).</div>`}
+      <div class="srcs"><b>Passages given to the model</b> (reranker score)${x.src.map((s,i)=>`<div><span class="cite">${i+1}</span> ${esc(s[0])}, ${esc(s[1])} <span style="color:var(--ink-3)">· ${s[2].toFixed(2)}</span></div>`).join('')}</div></div>`;
+    const b=el.firstElementChild;b.onclick=()=>{el.classList.toggle('open');b.setAttribute('aria-expanded',el.classList.contains('open'))};
+    return el;
+  }
+  function page(){const f=document.createDocumentFragment();view.slice(shown,shown+PAGE).forEach(x=>f.appendChild(item(x)));list.appendChild(f);shown+=PAGE;more.hidden=shown>=view.length}
+  more.onclick=page;
+  let t;['f-lv','f-out'].forEach(id=>document.getElementById(id).onchange=apply);
+  document.getElementById('f-q').oninput=()=>{clearTimeout(t);t=setTimeout(apply,200)};
+  // ---------- specifications
+  const DL=id=>`https://specifications.o-ran.org/download?id=${id}`;
+  fetch('assets/specs.json').then(r=>r.json()).then(S=>{
+    const wgs=[...new Set(S.map(x=>x.wg))].sort((a,b)=>(parseInt(a.slice(2))||99)-(parseInt(b.slice(2))||99)||a.localeCompare(b));
+    const sel=document.getElementById('s-wg'), body=document.getElementById('s-body'), sq=document.getElementById('s-q');
+    wgs.forEach(w=>sel.insertAdjacentHTML('beforeend',`<option>${w}</option>`));
+    function draw(){const w=sel.value,q=sq.value.trim().toLowerCase();
+      const v=S.filter(x=>(!w||x.wg===w)&&(!q||x.name.toLowerCase().includes(q))).sort((a,b)=>wgs.indexOf(a.wg)-wgs.indexOf(b.wg)||a.name.localeCompare(b.name));
+      document.getElementById('s-count').textContent=`${v.length} of ${S.length} files`;
+      body.innerHTML=v.map(x=>`<tr><td><span class="pill neu">${esc(x.wg)}</span></td><td style="word-break:break-word">${esc(x.name)}</td><td class="mono">${esc(x.ver)}</td>
+        <td class="n"><a href="${DL(x.id)}" rel="noopener">${x.fmt.toUpperCase()} ↓</a></td></tr>`).join('')}
+    sel.onchange=draw; sq.oninput=draw; draw();
+    const cmd=`git clone https://github.com/timalsinaditya/oran-rag-lab.git\ncd oran-rag-lab\n./download_specs.sh`;
+    document.getElementById('s-cmd').textContent=cmd;
+    document.getElementById('s-copy').onclick=e=>{navigator.clipboard.writeText(document.getElementById('s-cmd').textContent).then(()=>{e.target.textContent='Copied';setTimeout(()=>e.target.textContent='Copy command',1500)})};
+    document.getElementById('s-csv').onclick=()=>{const csv='id,working_group,name,version,url\n'+S.map(x=>[x.id,x.wg,'"'+x.name.replace(/"/g,'""')+'"',x.ver,DL(x.id)].join(',')).join('\n');
+      const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='oran_specs.csv';a.click()};
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+[
+ {"id": 1, "field": "rag_verdict", "value": "correct",
+  "reason": "Manual review: the reference list was truncated by the question author; the extra SMOS listed by RAG (SO, SA, AIMLWF, rApp management) are genuine entries from SMO-ARCH §4.2.1."}
+]
